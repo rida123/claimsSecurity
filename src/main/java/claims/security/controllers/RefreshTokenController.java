@@ -74,6 +74,7 @@ public class RefreshTokenController extends BaseController {
             System.out.println("Type===== " + authentication.getPrincipal().toString());
             String username = authentication.getPrincipal().toString();
 
+            //test
 
          //   CoreUser coreUser = coreUserService.getCoreUser(username);
             // to
