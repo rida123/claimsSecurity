@@ -4,12 +4,10 @@ package claims.security.controllers;
 import claims.security.entities.*;
 import claims.security.http.response.ApiResponse;
 import claims.security.http.response.CoreUserProfileResponse;
-import claims.security.http.response.JWTResponse;
 import claims.security.http.response.StatusCode;
 import claims.security.repositories.UserRepository;
 import claims.security.security.managers.JwtAuthManager;
 import claims.security.security.managers.SignInAuthenticationManager;
-//import claims.security.security.model.CustomTokenAuthentication;
 import claims.security.security.model.CustomTokenAuthentication;
 import claims.security.security.model.LoginInRequest;
 import claims.security.security.model.SecurityUser;
@@ -17,13 +15,15 @@ import claims.security.security.model.UsernamePasswordAuthentication;
 import claims.security.security.services.JWTService;
 import claims.security.security.services.RefreshTokenService;
 import claims.security.services.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value="api/auth")
+@RequestMapping("api/basicAuth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:4200", allowedHeaders = "*")
 @Slf4j
@@ -149,8 +149,8 @@ public class SecurityController {
 
             //generate token using configured jwtToken Service:
 //            String token = this.jwtService.generateToken(name, loginUserAuthoritiesNames);
-            String token = this.jwtService.generateTokenFromProfileNames(name, enrolledProfilesNames);
-
+//            String token = this.jwtService.generateTokenFromProfileNames(name, enrolledProfilesNames);
+            String token = this.jwtService.generateTokenFromProfileNames(name);
             log.warn("token is 1234");
             System.out.println("@ValidateUserController(/validate endpoint) => TOKEN VALUE:::" + token);
             //cookie:
@@ -187,6 +187,51 @@ public class SecurityController {
         else{
             return ResponseEntity.ok(new ApiResponse(StatusCode.FORBIDDEN.getCode(), "incorrect user or  password", null));
         }
+    }
+
+    @GetMapping("/loginInfo")
+    public ApiResponse loginInfo(HttpServletRequest req) {
+        //
+        String authorizationHeader = req.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer")) {
+            return new ApiResponse(StatusCode.NOT_FOUND.getCode(), "Error", "User information unavailable");
+        }
+        //
+        String jwt = authorizationHeader.substring(7); // remove "Bearer " prefix
+        // add the JWT token to the list of invalidated tokens in the database
+        String payload = this.jwtService.validateToken(jwt);
+        JsonParser parser = JsonParserFactory.getJsonParser();
+        //parseMap receives json and returns map(add to code fragments)
+        Map<String, Object> payLoadMap = parser.parseMap(payload);
+        String loginUser = payLoadMap.get("user").toString();
+
+        Optional<UserTrace> optionalUserTrace = this.userTraceService.findLastLoginByCoreUser(loginUser);
+        if(optionalUserTrace.isPresent()) {
+            UserTrace loginTrace = optionalUserTrace.get();
+            Optional<CoreUserPreference> userPreferenceOptional =dbUtils.coreUserPreferenceRepository.findByCoreUser(loginTrace.getCoreUserId());
+            userPreferenceOptional.ifPresent(userPrefe->{
+                loginTrace.setDisplayName(userPrefe.getDisplayName());
+                Optional<CoreDocumentFile>    coreDocumentFileOptional=   dbUtils.coreDocumentFileRepository.findById(loginTrace.getCompanyId()+".basicLogo");
+                if(coreDocumentFileOptional.isPresent()){
+                    loginTrace.setLogo(coreDocumentFileOptional.get().getContent());
+                }else{
+                    Optional<CoreDocumentFile>    coreDocumentFileOptional2=   dbUtils.coreDocumentFileRepository.findById("1.basicLogo");
+                    if (coreDocumentFileOptional2.isPresent()){
+                        loginTrace.setLogo(coreDocumentFileOptional2.get().getContent());
+                    }
+                }
+                loginTrace.setUserPicture(userPrefe.getUserPicture());
+
+
+            });
+
+
+
+            System.out.println("LOGIN TRACE:::=> " + loginTrace.toString());
+            return new ApiResponse(StatusCode.OK.getCode(), "LoginInfo", loginTrace);
+        }
+        return new ApiResponse(StatusCode.NOT_FOUND.getCode(), "FAilure",
+                "login info for user: " + loginUser + " not found ");
     }
 
 
@@ -270,16 +315,18 @@ public class SecurityController {
                 List<GrantedAuthority> authorityList = authentication.getAuthorityList();
 
                 // Extract role names from the GrantedAuthority list
-               List<String> roles = authorityList.stream()
+          /*     List<String> roles = authorityList.stream()
                     .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList());*/
+
+                List<String> coreRoleIdList =  userService.findCoreRoleId(authentication.getName());
 
                 authenticationResult.put("valid", true);
                 authenticationResult.put("username", authentication.getName());
                 authenticationResult.put("password", authentication.getCredentials());
                 authenticationResult.put("isAuthenticated", Boolean.TRUE);
                 authenticationResult.put("expired", false);
-                authenticationResult.put("roles", roles);
+                authenticationResult.put("roles", coreRoleIdList);
                 return authenticationResult;
             }
         }

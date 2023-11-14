@@ -19,4 +19,7 @@ public interface CoreUserRepository extends BaseRepository<CoreUser, String> {
     @Modifying
     @Query("UPDATE CoreUser e SET e.activeFlag = 0 WHERE e.id = :username")
     void deActivateUser(@Param("username") String username);
+
+    @Query(value = " select core_role_id from core_user_profile_perm where core_user_profile_id in (select id from core_user_profile   where core_user_id = ?1) ", nativeQuery = true)
+    List<String> findCoreRoleId(String username);
 }

@@ -40,8 +40,8 @@ public class SecurityConfig {
 
             http.authorizeRequests(authorizeRequests ->
                     authorizeRequests
-                            .requestMatchers("/api/auth/**").permitAll()
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers("/api/basicAuth/**").permitAll()
                             .requestMatchers("/notification").hasAuthority("read")
                             .anyRequest().authenticated()
             );

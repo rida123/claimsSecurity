@@ -1,8 +1,12 @@
 package claims.security.security.providers;
 
+import claims.security.entities.CoreUser;
+import claims.security.http.response.CoreUserProfileResponse;
 import claims.security.security.model.CustomTokenAuthentication;
 import claims.security.security.services.JWTService;
 import claims.security.security.services.JpaUserDetailsService;
+import claims.security.services.CoreUserProfileService;
+import claims.security.services.CoreUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParser;
 import org.springframework.boot.json.JsonParserFactory;
@@ -17,11 +21,19 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 //@AllArgsConstructor
 public class CustomJWTAuthProvider implements AuthenticationProvider {
     private JpaUserDetailsService userDetailsService;
+    @Autowired
+    private CoreUserProfileService userProfileService;
+
+    @Autowired
+    private CoreUserService coreUserService;
+
+
     @Autowired
     JWTService jwtService;
 
@@ -59,14 +71,21 @@ public class CustomJWTAuthProvider implements AuthenticationProvider {
 
                List<String> authorities_names = (List<String>) payLoadMap.get("authorities");
 
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(user);
+                Optional<CoreUser> optionalCoreUser = coreUserService.findById(user);
+              List<String> coreRoleIdList =  coreUserService.findCoreRoleId(user);
+
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 //for each authority name we create a GrantedAuthority object
-                for (String authority: authorities_names) {
+             /*   for (String authority: coreRoleIdList) {
                     GrantedAuthority ga = new SimpleGrantedAuthority(authority);
                     authorities.add(ga);
-                }
+                }*/
 
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(user);
+
+
+
+//                UserDetails userDetails = this.userDetailsService.loadUserByUsername(user);
                 return new CustomTokenAuthentication(true, jwtToken, authorities, userDetails);
         }
             catch (Exception e) {

@@ -58,15 +58,15 @@ public class JWTService {
                 .sign(Algorithm.RSA256(publicKey, privateKey));
     }
 
-    public String generateTokenFromProfileNames(String name, List<CoreUserProfileResponse> profiles) {
+    public String generateTokenFromProfileNames(String name) {
         Optional<CoreDomainValue> coreDomainValueOptional3 = db.coreDomainValueRepository.findById("PASSWORD_CONFIGURATON.TOKEN_LIFE");
         coreDomainValueOptional3.ifPresent(coreDomainValue -> {
             expirationTime= Integer.parseInt(coreDomainValue.getVal1())* 60000L;
         });
         List<String> profiles_ = new ArrayList<>();
-        for (CoreUserProfileResponse p : profiles) {
-            profiles_.add(p.getName());
-        }
+//        for (CoreUserProfileResponse p : profiles) {
+//            profiles_.add(p.getName());
+//        }
         String[] user_registeredProfiles = new String[profiles_.size()];
         user_registeredProfiles = profiles_.toArray(user_registeredProfiles);
 

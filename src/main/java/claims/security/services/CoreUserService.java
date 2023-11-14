@@ -256,4 +256,9 @@ public class CoreUserService extends BaseService<CoreUser> {
         apiResponse.setData(userResponses);
         return apiResponse;
     }
+
+
+    public List<String> findCoreRoleId(String username){
+        return coreUserRepository.findCoreRoleId(username);
+    }
 }

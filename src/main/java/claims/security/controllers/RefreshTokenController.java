@@ -15,6 +15,8 @@ import claims.security.services.DBUtils;
 import claims.security.services.UserTraceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,7 +56,8 @@ public class RefreshTokenController extends BaseController {
                 .map(refreshToken -> {
                     refreshToken = refreshTokenService.createRefreshToken(refreshToken.getUser().getId());
                     List<CoreUserProfileResponse> enrolledProfilesNames = this.userProfileService.getEnrolledUserProfiles(refreshToken.getUser());
-                    String token = this.jwtService.generateTokenFromProfileNames(refreshToken.getUser().getId(), enrolledProfilesNames);
+//                    String token = this.jwtService.generateTokenFromProfileNames(refreshToken.getUser().getId(), enrolledProfilesNames);
+                    String token = this.jwtService.generateTokenFromProfileNames(refreshToken.getUser().getId());
                     return ResponseEntity.ok(new TokenRefreshResponse(token, refreshToken.getToken()));
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in the database!"));
@@ -62,12 +65,19 @@ public class RefreshTokenController extends BaseController {
 
 
 
-
-
         @PostMapping("/signout")
     public ResponseEntity<?> logoutUser() {
 
-        String username = getCurrentUser().getUsername();
+        //from
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println("type of Authentication " +  authentication.getClass());
+            System.out.println("Type===== " + authentication.getPrincipal().toString());
+            String username = authentication.getPrincipal().toString();
+
+
+         //   CoreUser coreUser = coreUserService.getCoreUser(username);
+            // to
+       // String username = getCurrentUser().getUsername();
             // we insert record in user trace as successful login transaction
             CoreCompany userCompany = this.userService.getCompanyByCoreUser(username);
             UserTrace loginTransaction = new UserTrace();
