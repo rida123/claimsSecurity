@@ -1,10 +1,11 @@
 package claims.security.security.services;
 
-import claims.security.entities.CoreUser;
+import claims.security.entities.*;
 import claims.security.repositories.CoreUserProfileJpaRepository;
 import claims.security.repositories.CoreUserRepository;
-import claims.security.repositories.UserRepository;
+import claims.security.security.model.SecurityAuthority;
 import claims.security.security.model.SecurityUser;
+import claims.security.utils.ClaimsUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,17 +14,19 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
+import java.util.*;
 
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class JpaUserDetailsService implements  UserDetailsService {
-
     @Autowired
     private final CoreUserRepository coreUserRepository;
+
+    private Map<String, Set<CoreRole>> userRolesPerProfile;
+
+    private List<SecurityAuthority> userAuthorities_for_all_profiles;
 
     @Autowired
     private final CoreUserProfileJpaRepository coreUserProfileRepository;
@@ -41,35 +44,50 @@ public class JpaUserDetailsService implements  UserDetailsService {
             throw new UsernameNotFoundException("User not found in the database");
         }
 
+        log.info("User found in the database");
+        System.out.println("----------------------------------------------");
 
         foundCoureUser = optionalCoreUser.get();
-        //get company of this user from one of his profiles:
+
+        //GET COMPANY OF THIS USER FROM ONE OF HIS PROFILES:
         if (foundCoureUser.getProfiles().size() > 0) {
             String profileId = foundCoureUser.getProfiles().get(0).getId();
 
             int companyId = Integer.parseInt(profileId.substring(0, profileId.indexOf(".")));
             foundCoureUser.setCompany_id(companyId);
         }
-        log.info("User found in the database");
 
-        System.out.println("----------------------------------------------");
-        securityUser = new SecurityUser(coreUserProfileRepository, foundCoureUser);
+        //THE FOLLOWING  3 steps ARE TO FETCH USER ROELS:
+
+         /* STEP 1: fetching CoreUser registered_profiles(for each profile, a user has several roles) */
+        List<CoreUserProfile> registeredProfiles = this.coreUserProfileRepository.findCoreUserProfileByCoreUserId(foundCoureUser.getId());
+        //-----------FROM----------
+
+      //=  List<CoreCompanyProfile> companyProfiles = foundCoureUser.getProfiles();
+
+        /**STEP 2:
+         * as we have registeredProfiles that represents a list of what profiles the user have
+         * within his company => second step is to get what roles  this user have for each
+         * profile he has access to. => We created a map of KEY (representing profile id) and
+         * VALUE( representing Set of CoreRole(s) of a certain profile.) This map is filled up in helper
+         * method: getRolesForInvolvedProfiles(CoreUserProfile coreUser_CompanyProfiles)
+         */
+        this.userRolesPerProfile = ClaimsUtils.getRolesForInvolvedProfiles(registeredProfiles);
+
+        //STEP 3:
+        System.out.println("for each company profile, list roles that user: " + foundCoureUser.getId() + " has:");
+        //looping through each entry of this map that represents (profile, set_of_roles_for_that_profile)
+        for (Map.Entry<String, Set<CoreRole>> rolesPerProfile_map :  this.userRolesPerProfile.entrySet()) {
+
+            //looping through roles for a profile then creating a Next2Authority for each role
+            for (CoreRole role :rolesPerProfile_map.getValue()) {
+                Next2Authority authority = new Next2Authority(role.getId(), role.getId(), role.getDescription(), role.getCoreProfile());
+                userAuthorities_for_all_profiles.add(new SecurityAuthority(authority));
+            }
+        }
+
+        securityUser = new SecurityUser(userAuthorities_for_all_profiles, foundCoureUser);
         //returning a spring security user
         return securityUser;
-//        } end try
-        /*     catch (Exception exp) {
-         *//*  System.out.println(exp.getMessage());
-            throw  new NotFoundException("AAAAAA     " + exp.getMessage());*//*
-             throw new UsernameNotFoundException("User not found in the database");
-//            return  null;
-        }*/
-// TODO: 12/7/2022 if user is not found in the database => return an exception
-      /*  return usr.map(SecurityUser::new)
-                .orElseThrow( ()-> {
-                    System.out.println("user not found in db");
-                    log.error("user not found in the database");
-                    return new UsernameNotFoundException("@JpaUserDetailsService: username not found "
-                            + username);
-                });*/
     }
 }

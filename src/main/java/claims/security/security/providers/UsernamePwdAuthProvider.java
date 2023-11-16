@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,13 @@ public class UsernamePwdAuthProvider implements AuthenticationProvider {
 
 
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+
+        for (GrantedAuthority authority : userDetails.getAuthorities()) {
+            System.out.println("authority ==> " + authority.getAuthority());
+        }
         String user_details_pwd = userDetails.getPassword();
 //        String encoded_input_password = this.passwordEncoder.passwordEncoder().encode(password);
+
 
         String encoded_input_password = this.passwordEncoder.passwordEncoder().encode(password);
         if(encoded_input_password.matches(user_details_pwd)) {

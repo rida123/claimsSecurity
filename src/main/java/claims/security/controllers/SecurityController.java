@@ -15,6 +15,7 @@ import claims.security.security.model.UsernamePasswordAuthentication;
 import claims.security.security.services.JWTService;
 import claims.security.security.services.RefreshTokenService;
 import claims.security.services.*;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -85,6 +86,7 @@ public class SecurityController {
 
         if(auth.isAuthenticated()) {
             System.out.println("authentication result: " + auth.isAuthenticated());
+            System.out.println("type of authentication object " + auth.getClass());
             System.out.println("@SecurityController(/validate endpoint) => coming user::" + auth.getPrincipal());
             SecurityUser currentUser = (SecurityUser) auth.getPrincipal();
 
