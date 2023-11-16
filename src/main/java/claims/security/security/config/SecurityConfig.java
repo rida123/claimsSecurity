@@ -42,6 +42,7 @@ public class SecurityConfig {
                     authorizeRequests
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .requestMatchers("/api/basicAuth/**").permitAll()
+                            .requestMatchers("/api/refresh/**").permitAll()
                             .requestMatchers("/notification").hasAuthority("read")
                             .anyRequest().authenticated()
             );
