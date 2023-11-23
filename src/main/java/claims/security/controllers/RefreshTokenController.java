@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -70,9 +71,10 @@ public class RefreshTokenController extends BaseController {
 
         //from
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
             System.out.println("type of Authentication " +  authentication.getClass());
             System.out.println("Type===== " + authentication.getPrincipal().toString());
-            String username = authentication.getPrincipal().toString();
+            UserDetails userDetails =(UserDetails) authentication.getPrincipal();
 
             //test
 
@@ -80,9 +82,9 @@ public class RefreshTokenController extends BaseController {
             // to
        // String username = getCurrentUser().getUsername();
             // we insert record in user trace as successful login transaction
-            CoreCompany userCompany = this.userService.getCompanyByCoreUser(username);
+            CoreCompany userCompany = this.userService.getCompanyByCoreUser(userDetails.getUsername());
             UserTrace loginTransaction = new UserTrace();
-            loginTransaction.setCoreUserId(username);
+            loginTransaction.setCoreUserId(userDetails.getUsername());
             loginTransaction.setCompanyId(Integer.valueOf(userCompany.getId()));
             loginTransaction.setComments("logout");
             loginTransaction.setObjectCode("logout");
