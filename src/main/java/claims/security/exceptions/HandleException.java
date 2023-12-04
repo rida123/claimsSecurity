@@ -78,12 +78,13 @@ public class HandleException extends ResponseEntityExceptionHandler {
 
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ApiResponse handleBadCredentialsException(BadCredentialsException ex) {
+    public ResponseEntity<ApiResponse> handleBadCredentialsException(BadCredentialsException ex) {
         System.out.println("we are @ bad credentials exception");
 
         ErrorDetails details = new ErrorDetails(ex.getMessage(),ex.getMessage() ,new Date());
         log.error(details.toString());
-        return new ApiResponse(StatusCode.UNAUTHORIZED.getCode(), "Username or password is incorrect",  null);
+        ApiResponse apiResponse = new ApiResponse(StatusCode.UNAUTHORIZED.getCode(), "Username or password is incorrect",  null);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
     }
 
    @ExceptionHandler(value = {WrongPasswordException.class})

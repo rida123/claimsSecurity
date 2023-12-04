@@ -1,13 +1,12 @@
 package claims.security.security.model;
 
-import claims.security.entities.*;
-import claims.security.repositories.CoreUserProfileJpaRepository;
-import claims.security.utils.ClaimsUtils;
+import claims.security.entities.CoreUser;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
 @AllArgsConstructor
 public class SecurityUser implements UserDetails {

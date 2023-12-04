@@ -236,6 +236,35 @@ public class SecurityController {
                 "login info for user: " + loginUser + " not found ");
     }
 
+    @GetMapping("/logout")
+    public ApiResponse logout(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        String jwt = authorizationHeader.substring(7); // remove "Bearer " prefix
+        // add the JWT token to the list of invalidated tokens in the database
+        String payload = this.jwtService.validateToken(jwt);
+        JsonParser parser = JsonParserFactory.getJsonParser();
+        //parseMap receives json and returns map(add to code fragments)
+        Map<String, Object> payLoadMap = parser.parseMap(payload);
+        String loginUser = payLoadMap.get("user").toString();
+
+
+        //now create record of the user trace with logout record:
+        CoreCompany userCompany = this.userService.getCompanyByCoreUser(loginUser);
+        UserTrace loginTransaction = new UserTrace();
+        loginTransaction.setCoreUserId(loginUser);
+        loginTransaction.setCompanyId(Integer.valueOf(userCompany.getId()));
+        loginTransaction.setComments("logout");
+        loginTransaction.setObjectCode("logout");
+        loginTransaction.setObjectId("0");
+        loginTransaction.setSysCreatedDate(LocalDateTime.now());
+        loginTransaction.setSysUpdatedDate(LocalDateTime.now());
+        loginTransaction.setSysVersionNumber(1L);
+        this.userTraceService.save(loginTransaction);
+
+        // return a response indicating successful logout
+        return new ApiResponse(StatusCode.OK.getCode(), "Logout", "User logout successfully");
+    }
+
 
     @GetMapping(value="/profile-token")
     public  ResponseEntity<?> getProfileRolesToken(@RequestParam(required = true) String profileId) {
